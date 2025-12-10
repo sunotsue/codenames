@@ -219,3 +219,6 @@ def setup_game(num_words=25):
     random.shuffle(colors)
     
     return list(zip(board_words, colors)), random.choice(['red', 'blue'])
+
+
+print(is_illegal_clue("kiss", ["kiss","kissed", "love", "heart"]))

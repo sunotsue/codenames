@@ -3,7 +3,8 @@ from tkinter import messagebox, scrolledtext
 from codenames_game import (
     CodenamesGame, 
     generate_all_clues, 
-    score_clues
+    score_clues,
+    is_illegal_clue
 )
 
 class CodenamesGUI:
@@ -181,37 +182,45 @@ class CodenamesGUI:
             if word in self.game.revealed:
                 # Word has been revealed - show actual color (BRIGHT)
                 color_map = {
-                    'red': '#FF0000',      # Bright red
-                    'blue': '#0000FF',     # Bright blue
-                    'neutral': '#FFFF00',  # Bright yellow
-                    'assassin': '#000000'  # Black
+                    'red': '#FF0000',
+                    'blue': '#0000FF',
+                    'neutral': '#FFFF00',
+                    'assassin': '#000000'
                 }
                 text_color = 'white' if color in ['red', 'blue', 'assassin'] else 'black'
                 btn.config(
-                    bg=color_map[color], 
+                    bg=color_map[color],
                     fg=text_color,
+                    activebackground=color_map[color],  # Mac fix
+                    highlightbackground=color_map[color],  # Mac fix
                     state=tk.DISABLED,
                     relief=tk.SUNKEN
                 )
             elif self.spymaster_mode:
-                # Spymaster view - DARKER, more visible colors
+                # Spymaster view - DARKER colors with Mac fixes
                 color_map = {
-                    'red': '#FF6B6B',      # Medium-dark red
-                    'blue': '#4ECDC4',     # Teal/cyan
-                    'neutral': '#F7DC6F',  # Golden yellow
-                    'assassin': '#95A5A6'  # Medium gray
+                    'red': '#FF6B6B',
+                    'blue': '#4ECDC4',
+                    'neutral': '#F7DC6F',
+                    'assassin': '#95A5A6'
                 }
                 btn.config(
-                    bg=color_map[color], 
+                    bg=color_map[color],
                     fg='black',
+                    activebackground=color_map[color],  # Mac fix
+                    highlightbackground=color_map[color],  # Mac fix
+                    highlightcolor=color_map[color],  # Mac fix
                     state=tk.NORMAL,
                     relief=tk.RAISED
                 )
+                print(f"Set {word} to {color} = {color_map[color]}")  # Debug
             else:
                 # Operative view - all white
                 btn.config(
-                    bg='#FFFFFF',  # White
+                    bg='#FFFFFF',
                     fg='black',
+                    activebackground='#FFFFFF',  # Mac fix
+                    highlightbackground='#FFFFFF',  # Mac fix
                     state=tk.NORMAL,
                     relief=tk.RAISED
                 )
@@ -235,7 +244,6 @@ class CodenamesGUI:
             messagebox.showinfo("Game Over", "Game has ended!")
             return
         
-        # Can't click in spymaster mode
         if self.spymaster_mode:
             messagebox.showwarning("Spymaster Mode", "Submit a clue first! Then operatives will guess.")
             return
@@ -246,7 +254,6 @@ class CodenamesGUI:
             self.log(f"⚠️ '{word}' already revealed!")
             return
         
-        # Must have a clue to guess
         if not self.game.current_clue:
             messagebox.showwarning("No Clue", "Spymaster must give a clue first!")
             return
@@ -281,13 +288,21 @@ class CodenamesGUI:
         # Check if turn should end
         if self.game.should_end_turn(guessed_color):
             if guessed_color == self.game.current_team:
-                self.log(f"✅ Used all {self.game.current_n} guesses - turn ends")
+                # All guesses were correct!
+                self.log(f"✅ All {self.game.current_n} guesses correct!")
+                self.log(f"🎯 {self.game.current_team.upper()} team continues - Spymaster give new clue!")
+                
+                # Reset clue but keep same team
+                self.game.current_clue = None
+                self.game.current_n = 0
+                self.game.guesses_made = 0
+                self.switch_to_spymaster_mode()  # Stay with same team
             else:
+                # Wrong color - switch teams
                 self.log(f"❌ Wrong color - turn ends")
-            
-            self.game.end_turn()
-            self.reset_for_new_turn()
-    
+                self.game.end_turn()
+                self.reset_for_new_turn()
+                
     def submit_clue(self):
         """Spymaster submits a clue"""
         clue = self.clue_entry.get().strip().lower()
@@ -309,6 +324,17 @@ class CodenamesGUI:
         targets = self.game.get_unrevealed_by_color(self.game.current_team)
         if n > len(targets):
             messagebox.showwarning("Invalid", f"Only {len(targets)} words left!")
+            return
+        
+        # ✅ NEW: Check if clue is illegal
+        from codenames_game import is_illegal_clue
+        all_board_words = self.game.get_all_words()
+        
+        if is_illegal_clue(clue, all_board_words):
+            messagebox.showwarning(
+                "Illegal Clue", 
+                f"'{clue}' is illegal!\n\nIt contains or matches a word on the board.\nChoose a different clue."
+            )
             return
         
         self.game.set_clue(clue, n)
