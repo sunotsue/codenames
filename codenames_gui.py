@@ -74,15 +74,16 @@ class CodenamesGUI:
             btn.grid(row=row, column=col, padx=5, pady=5)
             self.word_buttons.append(btn)
         
-        # Clue area
-        clue_frame = tk.Frame(self.root, bg='lightyellow', height=150)
+        # Clue area - better contrast
+        clue_frame = tk.Frame(self.root, bg='#2C3E50', height=150)  # Dark blue-gray
         clue_frame.pack(fill=tk.X, padx=10, pady=10)
-        
+
         self.clue_label = tk.Label(
             clue_frame,
             text="SPYMASTER: Give a clue to your team",
             font=('Arial', 18, 'bold'),
-            bg='lightyellow'
+            bg='#2C3E50',
+            fg='white'  # White text on dark background
         )
         self.clue_label.pack(pady=10)
         
