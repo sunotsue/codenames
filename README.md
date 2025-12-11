@@ -104,7 +104,7 @@ def setup_game(num_words=25):  # Standard 5x5
 
 ## License
 
-MIT License
+MIT License © 2025 sunotsue
 
 ## Credits
 
